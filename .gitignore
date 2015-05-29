@@ -1,0 +1,7 @@
+#OS OR IDE Stuff
+.DS_Store
+var
+tmp
+.idea
+vendor/*
+bin

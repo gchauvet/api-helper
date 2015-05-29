@@ -1,0 +1,18 @@
+{
+  "name": "doyoubuzz/api-helper",
+  "description": "DoYouBuzz API Helper",
+  "minimum-stability": "dev",
+  "keywords": ["oauth", "API", "DoYouBuzz", "resume", "cv"],
+  "license": "MIT",
+  "authors": [
+    {
+      "name": "Eric Cambray",
+      "email": "e.cambray@doyoubuzz.com",
+      "homepage": "http://www.eric-cambray.com"
+    }
+  ],
+  "require": {
+    "php": ">=5.3.0",
+    "lusitanian/oauth": "~0.3"
+  }
+}
