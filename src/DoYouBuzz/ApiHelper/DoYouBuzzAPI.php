@@ -1,5 +1,6 @@
 <?php
 namespace DoYouBuzz\ApiHelper;
+include_once( __DIR__ . '/init.php');
 
 use OAuth\Common\Consumer\Credentials;
 use OAuth\Common\Http\Uri\Uri;

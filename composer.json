@@ -1,9 +1,10 @@
 {
   "name": "doyoubuzz/api-helper",
   "description": "DoYouBuzz API Helper",
-  "minimum-stability": "dev",
+  "minimum-stability": "stable",
   "keywords": ["oauth", "API", "DoYouBuzz", "resume", "cv"],
   "license": "MIT",
+  "version": "1.0.0",
   "authors": [
     {
       "name": "Eric Cambray",
@@ -14,5 +15,10 @@
   "require": {
     "php": ">=5.3.0",
     "lusitanian/oauth": "~0.3"
+  },
+  "autoload": {
+    "psr-0": {
+      "DoYouBuzz": "src/"
+    }
   }
 }
