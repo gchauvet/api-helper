@@ -1,6 +1,5 @@
 <?php
 namespace DoYouBuzz\ApiHelper;
-include_once( __DIR__ . '/init.php');
 
 use OAuth\OAuth1\Service\AbstractService;
 use OAuth\OAuth1\Signature\SignatureInterface;

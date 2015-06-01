@@ -1,6 +1,5 @@
 <?php
 namespace DoYouBuzz\ApiHelper;
-include_once( __DIR__ . '/init.php');
 
 use OAuth\Common\Consumer\Credentials;
 use OAuth\Common\Http\Uri\Uri;
@@ -37,37 +36,41 @@ class DoYouBuzzAPI
         $this->apiSecret = $apiSecret;
     }
 
-    protected function init()
+    protected function init($callbackUrl = null)
     {
         if (!$this->init) {
+            if (!$this->storage) {
+                $this->storage = new Session();
+            }
             $uriFactory = new UriFactory();
             $this->currentUri = $uriFactory->createFromSuperGlobalArray($_SERVER);
 
             $credentials = new Credentials(
                 $this->apiKey,
                 $this->apiSecret,
-                $this->currentUri->getAbsoluteUri()
+                $callbackUrl ? $callbackUrl : $this->currentUri->getAbsoluteUri()
             );
 
             $serviceFactory = new ServiceFactory();
-            $serviceFactory->registerService('DoYouBuzz', get_class($this));
+            $serviceFactory->registerService('DoYouBuzz', 'DoYouBuzz\ApiHelper\DoYouBuzzService');
             $this->service = $serviceFactory->createService('DoYouBuzz', $credentials, $this->storage);
 
             $this->init = true;
         }
     }
 
-    /**
+    /**u
+     * @param bool $redirect Will return URL if false, will make the redir if true
+     * @param null $callbackUrl By default the user will return to actual URI. You can override this.
      * @return \OAuth\Common\Token\TokenInterface|TokenInterface|string
      */
-    public function connect()
+    public function connect($redirect = false, $callbackUrl = null)
     {
-        $this->storage = new Session();
-        $this->init();
+        $this->init($callbackUrl);
         if (!empty($_GET['oauth_token'])) {
             /** @var TokenInterface $token */
-            $token = $this->storage->retrieveAccessToken(DoYouBuzzService::SERVICE_NAME);
-            // This was a callback request from Etsy, get the token
+            $token = $this->storage->retrieveAccessToken(DoYouBuzzService::SERVICE_NAME . 'Service');
+            // This was a callback request from DoYouBuzz, get the token
             return $this->service->requestAccessToken(
                 $_GET['oauth_token'],
                 $_GET['oauth_verifier'],
@@ -77,16 +80,25 @@ class DoYouBuzzAPI
             // Send a request now that we have access token
             $result = json_decode($this->service->request('/user'));
             echo 'result: <pre>' . print_r($result, true) . '</pre>';*/
-        } elseif (!empty($_GET['go']) && $_GET['go'] === 'go') {
-            $response = $this->service->requestRequestToken();
-            $extra = $response->getExtraParams();
-            $url = $extra['login_url'];
-            header('Location: ' . $url);
         } else {
-            $url = $this->currentUri->getRelativeUri() . '?go=go';
-            echo "<a href='$url'>Login with Etsy!</a>";
-            die;
+            $token = $this->service->requestRequestToken();
+            $url = $this->service->getAuthorizationUri(
+                array(
+                    'oauth_token' => $token->getRequestToken(),
+                    'oauth_callback' => $callbackUrl
+                )
+            );
+            if ($redirect) {
+                header('Location: ' . $url);
+            } else {
+                return $url;
+            }
         }
+    }
+
+    public function isConnected()
+    {
+        return $this->storage->hasAccessToken(DoYouBuzzService::SERVICE_NAME . 'Service');
     }
 
     public function setAccessToken($accessToken)
