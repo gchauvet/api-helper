@@ -2,14 +2,20 @@
 namespace DoYouBuzz\ApiHelper;
 
 use OAuth\Common\Consumer\Credentials;
+use OAuth\Common\Http\Client\CurlClient;
 use OAuth\Common\Http\Uri\Uri;
 use OAuth\Common\Http\Uri\UriFactory;
-use OAuth\Common\Storage\Memory;
 use OAuth\Common\Storage\Session;
 use OAuth\Common\Storage\TokenStorageInterface;
+use OAuth\OAuth1\Token\StdOAuth1Token;
 use OAuth\OAuth1\Token\TokenInterface;
 use OAuth\ServiceFactory;
 
+/**
+ * Class DoYouBuzzAPI. Helper to call DoYouBuzz OAuth API
+ *
+ * @package DoYouBuzz\ApiHelper
+ */
 class DoYouBuzzAPI
 {
 
@@ -36,6 +42,14 @@ class DoYouBuzzAPI
         $this->apiSecret = $apiSecret;
     }
 
+    /**
+     * @return string
+     */
+    protected function getServiceName()
+    {
+        return DoYouBuzzService::SERVICE_NAME . 'Service';
+    }
+
     protected function init($callbackUrl = null)
     {
         if (!$this->init) {
@@ -52,6 +66,7 @@ class DoYouBuzzAPI
             );
 
             $serviceFactory = new ServiceFactory();
+            $serviceFactory->setHttpClient(new CurlClient());
             $serviceFactory->registerService('DoYouBuzz', 'DoYouBuzz\ApiHelper\DoYouBuzzService');
             $this->service = $serviceFactory->createService('DoYouBuzz', $credentials, $this->storage);
 
@@ -59,27 +74,34 @@ class DoYouBuzzAPI
         }
     }
 
-    /**u
+    /**
+     * Connect user with Oauth Dance :
+     * - First call, will redirect (or return the URL) to request Token
+     * - Second call, must be done on callback page, will get access token.
+     * The second call return an array with AccessToken and AccessTokenSecret,
+     * you may store it for future use.
+     *
      * @param bool $redirect Will return URL if false, will make the redir if true
      * @param null $callbackUrl By default the user will return to actual URI. You can override this.
-     * @return \OAuth\Common\Token\TokenInterface|TokenInterface|string
+     * @return array|string|false
      */
     public function connect($redirect = false, $callbackUrl = null)
     {
         $this->init($callbackUrl);
         if (!empty($_GET['oauth_token'])) {
             /** @var TokenInterface $token */
-            $token = $this->storage->retrieveAccessToken(DoYouBuzzService::SERVICE_NAME . 'Service');
+            $token = $this->storage->retrieveAccessToken($this->getServiceName());
             // This was a callback request from DoYouBuzz, get the token
-            return $this->service->requestAccessToken(
+            $t = $this->service->requestAccessToken(
                 $_GET['oauth_token'],
                 $_GET['oauth_verifier'],
                 $token->getRequestTokenSecret()
             );
-            /*
-            // Send a request now that we have access token
-            $result = json_decode($this->service->request('/user'));
-            echo 'result: <pre>' . print_r($result, true) . '</pre>';*/
+            if ($t) {
+                return array($t->getAccessToken(), $t->getAccessTokenSecret());
+            } else {
+                return false;
+            }
         } else {
             $token = $this->service->requestRequestToken();
             $url = $this->service->getAuthorizationUri(
@@ -96,60 +118,161 @@ class DoYouBuzzAPI
         }
     }
 
+    /**
+     * Return if the user have a valid access token
+     *
+     * @return bool
+     */
     public function isConnected()
     {
-        return $this->storage->hasAccessToken(DoYouBuzzService::SERVICE_NAME . 'Service');
+        $this->init();
+        return $this->storage->hasAccessToken($this->getServiceName());
     }
 
-    public function setAccessToken($accessToken)
+    /**
+     * Remove all stored token and authorization states
+     */
+    public function clearAll()
     {
-        $this->storage = new Memory();
-        $this->storage->storeAccessToken(DoYouBuzzService::SERVICE_NAME, $accessToken);
+        $this->storage->clearAllAuthorizationStates();
+        $this->storage->clearAllTokens();
     }
 
+    /**
+     * Will use your own token (you may have stored in DB)
+     *
+     * @param $accessToken
+     * @param $secret
+     */
+    public function setAccessToken($accessToken, $secret)
+    {
+        $this->init();
+
+        $token = new StdOAuth1Token();
+        $token->setAccessToken($accessToken);
+        $token->setAccessTokenSecret($secret);
+        $this->storage->storeAccessToken($this->getServiceName(), $token);
+    }
+
+    /**
+     * Get the returned access token
+     *
+     * @return string|false
+     */
+    public function getAccessToken()
+    {
+        $this->init();
+        if ($this->isConnected()) {
+            return $this->storage->retrieveAccessToken($this->getServiceName())->getAccessToken();
+        } else {
+            return false;
+        }
+    }
+
+    /**
+     * @param $path
+     * @param string $method
+     * @param null $body
+     * @param array $extraHeaders
+     * @return \stdClass
+     * @throws ApiException
+     */
     protected function request($path, $method = 'GET', $body = null, array $extraHeaders = array())
     {
         $this->init();
-        if (!$this->storage || !$this->storage->hasAccessToken(DoYouBuzzService::SERVICE_NAME)) {
+        if (!$this->storage || !$this->storage->hasAccessToken($this->getServiceName())) {
             throw new ApiException('No Access Token defined, use setAccessToken or use connect before calling this method');
         }
 
         // Add format :
-        if (strpos($path, '?') === false) {
-            $path .= '?';
-        } else {
-            $path .= '&';
-        }
+        strpos($path, '?') === false ? $path .= '?' : $path .= '&';
         $path .= 'format=json';
 
         return json_decode($this->service->request($path, $method, $body, $extraHeaders));
     }
 
-    public function getUserData()
+    /**
+     * Get user data
+     * @return \stdClass
+     * @throws ApiException
+     */
+    public function getUser()
     {
-        return $this->request('/user');
+        $r = $this->request('/user');
+        if (isset($r->user)) {
+            return $r->user;
+        }
+        return false;
     }
 
-    public function getCvData($cvId)
+    /**
+     * Return the main CV of the user
+     *
+     * @return \stdClass
+     */
+    public function getMainCv()
     {
-        return $this->request(sprintf('/cv/%s', $cvId));
+        $user = $this->getUser();
+        foreach ($user->resumes->resume as $resume) {
+            if ($resume->main) {
+                return $this->getCv($resume->id);
+            }
+        }
     }
 
+    /**
+     * Get data for a CV owned by the user
+     *
+     * @param $cvId int
+     * @return \stdClass
+     * @throws ApiException
+     */
+    public function getCv($cvId)
+    {
+        $r = $this->request(sprintf('/cv/%s', $cvId));
+        if (isset($r->resume)) {
+            return $r->resume;
+        }
+        return false;
+    }
+
+    /**
+     * Get employment preferences for the user
+     *
+     * @return \stdClass
+     * @throws ApiException
+     */
     public function getEmploymentPreferences()
     {
-        return $this->request('/employmentpreferences');
+        $r = $this->request('/employmentpreferences');
+        if (isset($r->employmentPreferences)) {
+            return $r->employmentPreferences;
+        }
+        return false;
     }
 
+    /**
+     * Get statistics for the user
+     *
+     * @return \stdClass
+     * @throws ApiException
+     */
     public function getStatistics()
     {
         return $this->request('/user/stats');
     }
 
-    public function getDisplayOptions($cvId)
+    /**
+     * Return the display configuration for one view
+     *
+     * @param $cvId int
+     * @param $type string Can be web|mobile|print
+     * @return \stdClass
+     * @throws ApiException
+     */
+    public function getDisplayOptions($cvId, $type)
     {
-        return $this->request(sprintf('/cv/%s/display/web', $cvId));
+        return $this->request(sprintf('/cv/%s/display/%s', $cvId, $type));
     }
-
-
 
 }
