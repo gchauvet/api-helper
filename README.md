@@ -14,7 +14,7 @@ composer.json file.  Composer will handle the autoloading.
 ```json
 {
     "require": {
-        "doyoubuzz/api-helper": ">=1.0.0"
+        "doyoubuzz/api-helper": "dev-master"
     }
 }
 ```
@@ -34,7 +34,8 @@ if ($user) {
     echo 'Utilisateur : ' .  $user->firstname . ' ' . $user->lastname . '<br>';
 
     $mainCv = $dyb->getMainCv();
-
-    echo 'Cv : ' . $mainCv->title . '<br>';
+    if ($mainCv) {
+        echo 'Cv : ' . $mainCv->title . '<br>';
+    }
 }
 ```
