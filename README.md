@@ -22,7 +22,7 @@ composer.json file.  Composer will handle the autoloading.
 Usage
 =======
 
-```
+```php
 <?php
 // include your autoloader then :
 $apiKey = 'XXX';
