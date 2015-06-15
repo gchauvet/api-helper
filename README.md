@@ -44,15 +44,15 @@ Methods
 =======
 
 List of methods you can use :
-- getUser : Return a \stdClass with the user data (and CV with their titles)
+- getUser : Return a \stdClass with the user's data (and CV with their titles)
 - getMainCv : Return the main CV as \stdClass
 - getCv(:id) : Give an id and  get the CV as \stdClass
-- getStatistics : Return user statistics
-- getEmploymentPreferences : Return user employment preferences
+- getStatistics : Return user's statistics
+- getEmploymentPreferences : Return user's employment preferences
 - getDisplayOptions(:id, :type) : Return the display option for the given type (web, mobile, print)
 - getAccessToken : Return the access token
 - setAccessToken(:token, :secret): You can set the access token
 - clearAll : remove all data in storage (Session by default)
 - connect(:redirect = false, :callbackUrl) : Will connect your user and get the access token
 
-If you want to know the proriety availble on \stdClass see json format on our [doc](http://doc.doyoubuzz.com/).
+If you want to know the properties available on \stdClass see json format on our [doc](http://doc.doyoubuzz.com/).
