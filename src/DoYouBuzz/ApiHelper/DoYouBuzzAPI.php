@@ -155,15 +155,24 @@ class DoYouBuzzAPI
     }
 
     /**
-     * Get the returned access token
-     *
-     * @return string|false
+     * @return bool|TokenInterface
      */
     public function getAccessToken()
     {
         $this->init();
         if ($this->isConnected()) {
             return $this->storage->retrieveAccessToken($this->getServiceName())->getAccessToken();
+        } else {
+            return false;
+        }
+    }
+
+    public function getPrivateToken()
+    {
+        $this->init();
+        if ($this->isConnected()) {
+            /** @var TokenInterface $t */
+            return $this->storage->retrieveAccessToken($this->getServiceName())->getRequestTokenSecret();
         } else {
             return false;
         }
@@ -213,9 +222,11 @@ class DoYouBuzzAPI
     public function getMainCv()
     {
         $user = $this->getUser();
-        foreach ($user->resumes->resume as $resume) {
-            if ($resume->main) {
-                return $this->getCv($resume->id);
+        if ($user && isset($user->resumes)) {
+            foreach ($user->resumes->resume as $resume) {
+                if ($resume->main) {
+                    return $this->getCv($resume->id);
+                }
             }
         }
     }
