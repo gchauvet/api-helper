@@ -1,10 +1,10 @@
 {
   "name": "doyoubuzz/api-helper",
+  "type": "library",
   "description": "DoYouBuzz API Helper",
   "minimum-stability": "stable",
   "keywords": ["oauth", "API", "DoYouBuzz", "resume", "cv"],
   "license": "MIT",
-  "version": "1.0.0",
   "authors": [
     {
       "name": "Eric Cambray",
