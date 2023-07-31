@@ -13,7 +13,7 @@
     }
   ],
   "require": {
-    "php": ">=5.3.0",
+    "php": "^7.2 || ^8.0",
     "carlos-mg89/oauth": "~0.8"
   },
   "autoload": {

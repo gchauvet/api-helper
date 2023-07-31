@@ -4,7 +4,7 @@
         "Read more about it at https://getcomposer.org/doc/01-basic-usage.md#installing-dependencies",
         "This file is @generated automatically"
     ],
-    "content-hash": "ea6f2859e8c02b5d371247607e28ad93",
+    "content-hash": "288586aee7ee79e68642fa565ef6d672",
     "packages": [
         {
             "name": "carlos-mg89/oauth",
@@ -82,7 +82,7 @@
     "prefer-stable": false,
     "prefer-lowest": false,
     "platform": {
-        "php": ">=5.3.0"
+        "php": "^7.2 || ^8.0"
     },
     "platform-dev": [],
     "plugin-api-version": "2.2.0"
